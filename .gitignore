@@ -1,0 +1,10 @@
+*.pyc
+*.egg-info/
+/*venv/
+/dist/
+.idea/
+.vscode/
+/build/
+/ffmpeg_db/data
+
+*~
