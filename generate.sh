@@ -16,6 +16,9 @@ for exe in grep python3 find jq xargs pcregrep; do
   fi
 done
 
+output_folder=../../ffmpeg_db/data
+mkdir -p "$output_folder"
+
 grep -RPo 'AV_CODEC_ID_[A-Z0-9]+' | python3 -c '
 import sys, json
 
@@ -66,8 +69,7 @@ jq -n --argfile muxers ../muxers.json --argfile codec_ids ../codec_ids.json '
   $muxers[] | . + {codec_ids: ($codec_ids[.filename | sub("./";"")] // [])}
 ' > ../muxers-combined.json
 
-ext_to_codec_output=../../ffmpeg_db/data/ext-to-codecs.json
-mkdir -p "$(dirname "$ext_to_codec_output")"
+ext_to_codec_output=$output_folder/ext-to-codecs.json
 jq -n --argfile muxers ../muxers-combined.json --argfile codecs ../codecs.json \
   --argfile blacklist ../../ext-to-codecs_blacklist.json '
     reduce (
@@ -86,3 +88,21 @@ jq -n --argfile muxers ../muxers-combined.json --argfile codecs ../codecs.json \
 ' > $ext_to_codec_output
 
 echo "Generated to $(realpath --relative-to="$orig_path" "$ext_to_codec_output")"
+
+codec_info_output=$output_folder/codec-info.json
+mkdir -p "$(dirname "$ext_to_codec_output")"
+jq -n --argfile codecs ../codecs.json --argfile muxers ../muxers-combined.json \
+  --argfile blacklist ../../ext-to-codecs_blacklist.json '
+    reduce ($blacklist | to_entries)[] as $i ({}; . as $val | $i.value[] | $val[.] = (($val[.] // []) + [$i.key])) | . as $rev_blacklist |
+    reduce $codecs[] as $i (
+      {};
+      .[$i.name] = {
+        type: ($i.type | sub("AVMEDIA_TYPE_";"") | ascii_downcase),
+        extensions: ([
+          (($muxers[] | select(.codec_ids[] | contains($i.id)) | .extensions) // [])[]
+        ] | unique)
+      }
+    )
+' > $codec_info_output
+
+echo "Generated to $(realpath --relative-to="$orig_path" "$codec_info_output")"
