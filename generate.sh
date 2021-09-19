@@ -5,19 +5,19 @@ set -eE
 orig_path=$(pwd)
 cd "$(dirname "$0")"
 
-mkdir -p build
-[ -d build/Ffmpeg ] || git clone https://github.com/FFmpeg/FFmpeg build/Ffmpeg --depth 1 --single-branch
-cd build/Ffmpeg
-git pull
-
-for exe in grep python3 find jq xargs pcregrep; do
+for exe in git grep python3 find jq xargs pcre2grep; do
   if ! command -v "$exe" &>/dev/null; then
     echo "Error: Please install $exe"
+    exit 1
   fi
 done
 
 output_folder=../../ffmpeg_db/data
 mkdir -p "$output_folder"
+mkdir -p build
+[ -d build/Ffmpeg ] || git clone https://github.com/FFmpeg/FFmpeg build/Ffmpeg --depth 1 --single-branch
+cd build/Ffmpeg
+git pull
 
 grep -RPo 'AV_CODEC_ID_[A-Z0-9]+' | python3 -c '
 import sys, json
@@ -46,7 +46,7 @@ print(json.dumps([
 ]))' < libavcodec/codec_desc.c > ../codecs.json
 
 find . -iname '*.c' -print0 |
-  xargs -0 pcregrep -M 'AVOutputFormat\s+([a-zA-Z_0-9]+)\s*=\s*\{((?:.|\n)*?)\};\n' |
+  xargs -0 pcre2grep -M 'AVOutputFormat\s+([a-zA-Z_0-9]+)\s*=\s*\{((?:.|\n)*?)\};\n' |
   python3 -c '
 import re, sys, json
 formatters={
