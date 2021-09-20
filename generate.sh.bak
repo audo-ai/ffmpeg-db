@@ -95,13 +95,21 @@ jq -n --argfile codecs ../codecs.json --argfile muxers ../muxers-combined.json \
   --argfile blacklist ../../ext-to-codecs_blacklist.json '
     reduce ($blacklist | to_entries)[] as $i (
       {};
-      .[($i.value[])] += [$i.key]
-    ) | . as $rev_blacklist |
-    reduce ([{name: "aac", id: "AV_CODEC_ID_AAC", type: "AVMEDIA_TYPE_AUDIO"}])[] as $i (
+      . as $val | $i.value[] |
+        $val[.] = (($val[.] // []) + [$i.key])
+    )'
+   echo  '| . as $rev_blacklist |
+    reduce $codecs[] as $i (
       {};
       .[$i.name] = {
         type: ($i.type | sub("AVMEDIA_TYPE_";"") | ascii_downcase),
-        extensions: ([$muxers[] | . as $muxer | .codec_ids | select(index($i.id) != null) | ($muxer.extensions // [])[]] | unique)
+        extensions: ([
+          ((
+            $muxers[] |
+              select(.codec_ids[] | contains($i.id)) |
+              .extension
+          ) // [])[]
+        ] | unique)
       }
     )
 ' > $codec_info_output
