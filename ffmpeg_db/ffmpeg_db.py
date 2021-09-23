@@ -3,11 +3,14 @@ import json
 from pkg_resources import resource_filename
 
 
-def ext_to_codecs_json():
-    with open(resource_filename('ffmpeg_db', 'data/ext-to-codecs.json')) as f:
+def load_resource(name):
+    with open(resource_filename('ffmpeg_db', name)) as f:
         return json.load(f)
+
+
+def ext_to_codecs_json():
+    return load_resource('data/ext-to-codecs.json')
 
 
 def codec_info_json():
-    with open(resource_filename('ffmpeg_db', 'data/codec-info.json')) as f:
-        return json.load(f)
+    return load_resource('data/codec-info.json')
