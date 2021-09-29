@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='ffmpeg-db',
-    version='0.2.0',
+    version='0.3.0',
     description='Dataset/library of parsed ffmpeg codec information',
     url='https://github.com/audo-ai/ffmpeg-db',
     author='Matthew D. Scholefield',
